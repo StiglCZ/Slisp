@@ -8,6 +8,15 @@ namespace Slisp{
         public static readonly int WARN = 2;
         public static readonly int INFO = 3;
         public static string Compile(string path){
+            bool specialCompilation = false;
+            for(int i = 0, one=0, two = 0; i < path.Length;i++){
+                if(path[i] == '?')
+                    one = 1;
+                else if(path[i] == '.')
+                    two = 1;
+                else if(i == path.Length-1 && one == 1 && two ==0)
+                    specialCompilation = true;
+            }
             string output = "";
             string code = File.ReadAllText(path);
             code = code.Replace("\n","")
@@ -17,7 +26,7 @@ namespace Slisp{
             List<Function> funcs = new List<Function>();
             List<string> includes = new List<string>();
             for(int i = 0; i < functions.Length;i++){
-                funcs.Add(new Function(functions[i]));
+                funcs.Add(new Function(functions[i],specialCompilation));
                 output +=  funcs[funcs.Count-1].ccode;
                 foreach(string include in funcs[funcs.Count-1].includes){
                     for(int j = 0; j < includes.Count;j++){
@@ -37,16 +46,20 @@ namespace Slisp{
         }
         public static void Info(int level, string message){
             if(level == ERROR){
-                Console.WriteLine("Error: " + message);
                 Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.WriteLine("Error: " + message);
+                Console.ForegroundColor = ConsoleColor.White;
+                Environment.Exit(-1);
             }else if(level == WARN){
-                Console.WriteLine("Warning: " + message);
                 Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine("Warning: " + message);
             }else if(level == INFO){
-                Console.WriteLine("Info: " + message);
                 Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine("Info: " + message);
             }
+            /*
             
+*/
             Console.ForegroundColor = ConsoleColor.White;
         }
         public static string[] SplitParts(string src){
@@ -83,7 +96,7 @@ namespace Slisp{
                     path = args[i];
                 }
             }
-            File.WriteAllText("output.c",Compile(path));
+            File.WriteAllText("output.c","#include <stdlib.h>\n" +Compile(path));
             
         }
         public static string[] SplitPartsAndGetStart(string src){
@@ -110,20 +123,27 @@ namespace Slisp{
         }
     }
     class Function{
-        public Function(string code){
+        public Function(string code,bool cusc){
+            customcEnabled = cusc;
             this.code =code;
             parse();
         }
+        bool customcEnabled;
         string code = "";
         public string ccode = "";
         string name = "";
-        public List<string> includes;
-        List<string> globInts;
-        List<string> globStrings;
-        List<string> arguments;
+        public List<string> includes = new();
+        List<string> globInts = new();
+        List<string> globStrings = new();
+        List<string> arguments = new();
         public void parse(){
+            
             string[] instructions = Program.SplitPartsAndGetStart(code);   
             name = instructions[0];
+            if(name.Length < 1 ){
+                return;
+            }
+            Console.WriteLine("Parsing function named " + instructions[0]);
             for(int i = 1; i < instructions.Length;i++){
                 string[] arg = Program.SplitPartsAndGetStart(instructions[i]);
                 if(arg[0].Length < 1 && i == 1){
@@ -144,7 +164,7 @@ namespace Slisp{
                             if(arg[2] == "int"){
                                 ccode += "int " + arg[3] + ";";
                             }else if(arg[2] == "string"){
-                                ccode += "char[256] " + arg[3] + ";";
+                                ccode += "char " + arg[3] + "[256];";
                             }
                         }else if(arg[1] == "global"){
                             if(arg[2] == "int"){
@@ -158,7 +178,14 @@ namespace Slisp{
                         if(arg[1] == "int"){    
                             ccode += arg[2] + "=" + arg[3];
                         }else if(arg[1] == "string"){
-                            ccode += arg[2]+ " = " + arg[3].Replace("\\s"," ").Replace("\\n","\n")  +";";
+                            ccode += "strcpy(&" + arg[2]+"," + arg[3].Replace("\\s"," ")+");";
+                        }
+                        break;
+                    case "cusc":
+                        if(customcEnabled){
+                            ccode += arg[1];
+                        }else{
+                            Program.Info(Program.ERROR,"Illegal operation: cusc!");
                         }
                         break;
                     case "io":
@@ -169,6 +196,7 @@ namespace Slisp{
                             ccode += arg[1] + "(\"%d\"," + arg[3] +");";
                         }
                         break;
+                    
                     default:
                         ccode += arg[0] + "(";
                         for(int j = 1; j < arg.Length;j++){
@@ -190,6 +218,7 @@ namespace Slisp{
             argtext += "){";
             ccode = argtext + ccode;
             ccode += "return 0;}";
+            ccode = ccode.Replace(";();",";");
         }
     }
 }
