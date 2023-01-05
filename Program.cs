@@ -96,7 +96,7 @@ namespace Slisp{
                     path = args[i];
                 }
             }
-            File.WriteAllText("output.c","#include <stdlib.h>\n" +Compile(path));
+            File.WriteAllText("output.c","#include <stdlib.h>\n#include <stdio.h>\n#include <string.h>\n" +Compile(path));
             
         }
         public static string[] SplitPartsAndGetStart(string src){
@@ -137,7 +137,7 @@ namespace Slisp{
         List<string> globStrings = new();
         List<string> arguments = new();
         public void parse(){
-            
+            bool argsdetected = false;
             string[] instructions = Program.SplitPartsAndGetStart(code);   
             name = instructions[0];
             if(name.Length < 1 ){
@@ -147,9 +147,10 @@ namespace Slisp{
             for(int i = 1; i < instructions.Length;i++){
                 string[] arg = Program.SplitPartsAndGetStart(instructions[i]);
                 if(arg[0].Length < 1 && i == 1){
-                    for(int j = 1; j < arg.Length;j++){
+                    for(int j = 1; j < arg.Length -1;j++){
                         arguments.Add(arg[j]);
                     }
+                    continue;
                 }
                 if(arg.Length == 1 && arg[0].Length < 1){
                     Program.Info(Program.ERROR,"Invalid code! instruction:" + name);
@@ -200,11 +201,9 @@ namespace Slisp{
                     default:
                         ccode += arg[0] + "(";
                         for(int j = 1; j < arg.Length;j++){
-                            if(j > 1){
-                                ccode += ",";
-                            }
-                            ccode += ");";
+                            ccode += arg[j];
                         }
+                        ccode += ");";
                         break;
                 }
             }
@@ -213,7 +212,7 @@ namespace Slisp{
                 if(i > 0){
                     argtext += ",";
                 }
-                argtext +="int"+ arguments[i];
+                argtext +="int "+ arguments[i];
             }
             argtext += "){";
             ccode = argtext + ccode;
