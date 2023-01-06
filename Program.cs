@@ -42,6 +42,14 @@ namespace Slisp{
             foreach(string include in includes){
                 output = Compile(include) + output;
             }
+            foreach(Function func in funcs){
+                foreach(string globalInt in func.globInts){
+                    output ="int " + globalInt + ";" + output;
+                }
+                foreach(string globalString in func.globStrings){
+                    output ="char " + globalString + "[256];" + output;
+                }
+            }
             return output;
         }
         public static void Info(int level, string message){
@@ -96,6 +104,7 @@ namespace Slisp{
                     path = args[i];
                 }
             }
+            
             File.WriteAllText("output.c","#include <stdlib.h>\n#include <stdio.h>\n#include <string.h>\n" +Compile(path));
             
         }
@@ -133,8 +142,8 @@ namespace Slisp{
         public string ccode = "";
         string name = "";
         public List<string> includes = new();
-        List<string> globInts = new();
-        List<string> globStrings = new();
+        public List<string> globInts = new();
+        public List<string> globStrings = new();
         List<string> arguments = new();
         public void parse(){
             bool argsdetected = false;
