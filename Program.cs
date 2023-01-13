@@ -4,9 +4,7 @@ using System.Text;
 
 namespace Slisp{
     class Program{        
-        public static readonly int ERROR = 1;
-        public static readonly int WARN = 2;
-        public static readonly int INFO = 3;
+        public static readonly int ERROR = 1,WARN  = 2, INFO = 3;
         public static string Compile(string path){
             bool specialCompilation = false;
             for(int i = 0, one=0, two = 0; i < path.Length;i++){
@@ -65,9 +63,6 @@ namespace Slisp{
                 Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.WriteLine("Info: " + message);
             }
-            /*
-            
-*/
             Console.ForegroundColor = ConsoleColor.White;
         }
         public static string[] SplitParts(string src){
